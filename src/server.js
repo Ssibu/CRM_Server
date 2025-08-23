@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser"
 import authRoutes from "./routes/AuthRoutes.js"
 import pageRoutes from "./routes/PageRoutes.js"
 import footerlinkRoutes from "./routes/footerlink.routes.js";
+import actAndRuleRoutes from "./routes/actAndRule.routes.js"
 
 
 
@@ -33,6 +34,8 @@ app.use(express.json())
 app.use("/auth", authRoutes)
 app.use("/pages", pageRoutes)
 app.use("/api/footerlinks", footerlinkRoutes);
+app.use("/api/act-and-rules", actAndRuleRoutes);
+
 
 
 
