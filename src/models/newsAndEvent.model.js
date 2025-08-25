@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../config/sequelize.js'; // Ensure this path is correct
+import sequelize from '../config/sequelize.js';
 
 const NewsAndEvent = sequelize.define(
   'NewsAndEvent',
@@ -16,17 +16,10 @@ const NewsAndEvent = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    descriptionEnglish: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-    descriptionOdia: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-    document: { // Renamed from 'image' to 'document' for clarity
+    // descriptionEnglish and descriptionOdia have been removed
+    document: {
       type: DataTypes.STRING,
-      allowNull: false, // Assuming a document is required
+      allowNull: false,
     },
     status: {
       type: DataTypes.STRING,
