@@ -64,3 +64,48 @@ export const destroy = async (req, res) => {
 };
 
 // NOTE: Remember to add simplified 'update' and 'updateOrder' functions later.
+export const findOne = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const event = await NewsAndEvent.findByPk(id);
+    if (event) {
+      res.status(200).send(event);
+    } else {
+      res.status(404).send({ message: `Cannot find Event with id=${id}.` });
+    }
+  } catch (error) {
+    res.status(500).send({ message: `Error retrieving Event with id=${id}.` });
+  }
+};
+
+// Update a News & Event by ID
+export const update = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const event = await NewsAndEvent.findByPk(id);
+    if (!event) {
+      return res.status(404).send({ message: "Event not found." });
+    }
+
+    // If a new file is uploaded, multer will add it to req.file
+    // If not, we keep the old filename.
+    const updatedData = {
+      ...req.body,
+      document: req.file ? req.file.filename : event.document
+    };
+
+    // If a new file was uploaded and there was an old one, delete the old file
+    if (req.file && event.document) {
+        const oldFilePath = path.join('public/uploads/', event.document);
+        if (fs.existsSync(oldFilePath)) {
+            fs.unlinkSync(oldFilePath);
+        }
+    }
+    
+    await NewsAndEvent.update(updatedData, { where: { id: id } });
+    res.status(200).send({ message: "Event was updated successfully." });
+
+  } catch (error) {
+    res.status(500).send({ message: `Error updating Event with id=${id}.` });
+  }
+};
