@@ -10,6 +10,8 @@ import authRoutes from "./routes/AuthRoutes.js"
 import pageRoutes from "./routes/PageRoutes.js"
 import footerlinkRoutes from "./routes/footerlink.routes.js";
 import actAndRuleRoutes from "./routes/actAndRule.routes.js"
+import newsAndEventRoutes from "./routes/newsAndEvent.routes.js"
+
 
 
 
@@ -35,14 +37,7 @@ app.use("/auth", authRoutes)
 app.use("/pages", pageRoutes)
 app.use("/api/footerlinks", footerlinkRoutes);
 app.use("/api/act-and-rules", actAndRuleRoutes);
-
-
-
-
-
-
-
-
+app.use("/api/news-and-events", newsAndEventRoutes);
 app.use("/",(req, res)=> {
 	res.send("running...")
 })

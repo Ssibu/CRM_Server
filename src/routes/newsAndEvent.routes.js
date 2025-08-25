@@ -1,6 +1,6 @@
 import express from 'express';
 import { create, findAll, destroy } from '../controllers/newsAndEvent.controller.js';
-import upload from '../middleware/upload.js';
+import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 
