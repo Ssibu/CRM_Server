@@ -1,5 +1,6 @@
 import express from 'express';
-import { create, findAll, update, destroy, updateOrder } from '../controllers/footerlink.controller.js';
+// --- 1. IMPORT `findOne` FROM THE CONTROLLER ---
+import { create, findAll, findOne, update, destroy, updateOrder } from '../controllers/footerlink.controller.js';
 
 const router = express.Router();
 
@@ -8,6 +9,10 @@ router.post('/', create);
 
 // Route to get all footer links
 router.get('/', findAll);
+
+// --- 2. ADD THE MISSING ROUTE FOR GETTING ONE ITEM ---
+// This handles GET requests to /api/footerlinks/:id
+router.get('/:id', findOne);
 
 // Route to update the order of links
 router.put('/order', updateOrder);
