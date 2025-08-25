@@ -2,7 +2,7 @@ import Page from "../models/Page.js";
 
 export const createPage = async (req, res) => {
   try {
-    const { pageName, shortCode, remarks } = req.body;
+    const { pageName, shortCode, remarks } = req.body; 
 
     if (!pageName || !shortCode) {
       return res.status(400).json({ message: "Page Name and Short Code are required" });
