@@ -1,19 +1,19 @@
 import express from 'express';
-import { create, findAll, destroy } from '../controllers/newsAndEvent.controller.js';
-import upload from '../middlewares/upload.js';
+// --- 1. Import the new controller functions ---
+import { create, findAll, findOne, update, destroy /*, updateOrder*/ } from '../controllers/newsAndEvent.controller.js';
+import upload from '../middleware/upload.js';
 
 const router = express.Router();
 
-// POST /api/news-and-events
-// The 'upload' middleware processes the file upload before the 'create' controller is called.
+// ... (POST and GET all routes)
 router.post('/', upload, create);
-
-// GET /api/news-and-events
 router.get('/', findAll);
 
-// DELETE /api/news-and-events/:id
-router.delete('/:id', destroy);
+// --- 2. ADD THE NEW ROUTES ---
+router.get('/:id', findOne);
+router.put('/:id', upload, update); // The 'upload' middleware is also needed for updates
 
-// Define your PUT routes for update and reordering here later
+router.delete('/:id', destroy);
+// ... (updateOrder route)
 
 export default router;
