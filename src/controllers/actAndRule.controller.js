@@ -23,6 +23,19 @@ export const findAll = async (req, res) => {
     res.status(500).send({ message: error.message || "Error retrieving Act & Rules." });
   }
 };
+export const findOne = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const actAndRule = await ActAndRule.findByPk(id);
+    if (actAndRule) {
+      res.status(200).send(actAndRule);
+    } else {
+      res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
+    }
+  } catch (error) {
+    res.status(500).send({ message: `Error retrieving Act & Rule with id=${id}.` });
+  }
+};
 
 // Update an Act/Rule by its ID
 export const update = async (req, res) => {

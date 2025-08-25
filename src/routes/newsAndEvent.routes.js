@@ -1,7 +1,7 @@
 import express from 'express';
 // --- 1. Import the new controller functions ---
 import { create, findAll, findOne, update, destroy /*, updateOrder*/ } from '../controllers/newsAndEvent.controller.js';
-import upload from '../middleware/upload.js';
+import upload from '../middlewares/upload.js';
 
 const router = express.Router();
 

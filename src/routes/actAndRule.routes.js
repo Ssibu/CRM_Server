@@ -1,5 +1,5 @@
 import express from 'express';
-import { create, findAll, update, destroy, updateOrder } from '../controllers/actAndRule.controller.js';
+import { create, findAll,findOne, update, destroy, updateOrder } from '../controllers/actAndRule.controller.js';
 
 const router = express.Router();
 
@@ -11,6 +11,7 @@ router.get('/', findAll);
 
 // Route to update the display order
 router.put('/order', updateOrder);
+router.get('/:id', findOne);
 
 // Route to update a specific Act & Rule by ID
 router.put('/:id', update);
