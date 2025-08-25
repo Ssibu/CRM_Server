@@ -24,6 +24,22 @@ export const findAll = async (req, res) => {
   }
 };
 
+// --- ADDED: Find a single Footer Link by ID ---
+// This function is required for the Edit page to fetch existing data.
+export const findOne = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const link = await Footerlink.findByPk(id);
+    if (link) {
+      res.status(200).send(link);
+    } else {
+      res.status(404).send({ message: `Cannot find Link with id=${id}.` });
+    }
+  } catch (error) {
+    res.status(500).send({ message: `Error retrieving Link with id=${id}.` });
+  }
+};
+
 // Update a Footer Link by its ID
 export const update = async (req, res) => {
   const { id } = req.params;
@@ -57,12 +73,11 @@ export const destroy = async (req, res) => {
 
 // Update the display order for all links
 export const updateOrder = async (req, res) => {
-    const { order } = req.body; // Expects an array of item IDs in the new order
+    const { order } = req.body;
     if (!Array.isArray(order)) {
         return res.status(400).send({ message: "Invalid 'order' data. Must be an array of IDs." });
     }
     try {
-        // Use the sequelize instance attached to the model for the transaction
         const transaction = await Footerlink.sequelize.transaction();
         await Promise.all(order.map((id, index) =>
             Footerlink.update(
