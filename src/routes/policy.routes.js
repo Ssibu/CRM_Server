@@ -1,7 +1,7 @@
 import express from 'express';
 import { create, findAll, findOne, update, destroy, toggleStatus, updateOrder } from '../controllers/policy.controller.js';
 // --- CORRECTED: Import the default export and name it 'upload' ---
-import {upload} from '../../middleware/upload.js'; 
+import {upload} from '../middlewares/upload.js'; 
 
 const router = express.Router();
 
