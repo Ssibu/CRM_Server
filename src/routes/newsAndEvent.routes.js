@@ -1,6 +1,6 @@
 import express from 'express';
 // --- 1. Import the new controller functions ---
-import { create, findAll, findOne, update, destroy /*, updateOrder*/ } from '../controllers/newsAndEvent.controller.js';
+import { create, findAll, findOne, update, destroy, toggleStatus /*, updateOrder*/ } from '../controllers/newsAndEvent.controller.js';
 import upload from '../middlewares/upload.js';
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.put('/:id', upload, update); // The 'upload' middleware is also needed fo
 
 router.delete('/:id', destroy);
 // ... (updateOrder route)
+router.patch('/status/:id', toggleStatus);
 
 export default router;
