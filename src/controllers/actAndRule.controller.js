@@ -1,6 +1,4 @@
 import ActAndRule from '../models/actAndRule.model.js';
-
-// Create a new Act/Rule
 export const create = async (req, res) => {
   try {
     const { titleEnglish, titleOdia, descriptionEnglish, descriptionOdia } = req.body;
@@ -13,8 +11,6 @@ export const create = async (req, res) => {
     res.status(500).send({ message: error.message || "Error creating Act & Rule." });
   }
 };
-
-// Retrieve all Act/Rules, sorted by displayOrder
 export const findAll = async (req, res) => {
   try {
     const actAndRules = await ActAndRule.findAll({ order: [['displayOrder', 'ASC']] });
@@ -36,8 +32,6 @@ export const findOne = async (req, res) => {
     res.status(500).send({ message: `Error retrieving Act & Rule with id=${id}.` });
   }
 };
-
-// Update an Act/Rule by its ID
 export const update = async (req, res) => {
   const { id } = req.params;
   try {
@@ -52,8 +46,6 @@ export const update = async (req, res) => {
     res.status(500).send({ message: `Error updating Act & Rule with id=${id}.` });
   }
 };
-
-// Delete an Act/Rule by its ID
 export const destroy = async (req, res) => {
   const { id } = req.params;
   try {
@@ -67,10 +59,8 @@ export const destroy = async (req, res) => {
     res.status(500).send({ message: `Could not delete Act & Rule with id=${id}.` });
   }
 };
-
-// Update the display order for all items
 export const updateOrder = async (req, res) => {
-    const { order } = req.body; // Expects an array of item IDs in the new order
+    const { order } = req.body; 
     if (!Array.isArray(order)) {
         return res.status(400).send({ message: "Invalid 'order' data. Must be an array of IDs." });
     }
@@ -95,11 +85,7 @@ export const toggleStatus = async (req, res) => {
     if (!actAndRule) {
       return res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
     }
-
-    // Toggle the status
     const newStatus = actAndRule.status === 'Active' ? 'Inactive' : 'Active';
-    
-    // Update the record with the new status
     await actAndRule.update({ status: newStatus });
     
     res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });

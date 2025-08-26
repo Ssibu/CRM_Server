@@ -1,6 +1,4 @@
 import Footerlink from '../models/footerlink.model.js';
-
-// Create a new Footer Link
 export const create = async (req, res) => {
   try {
     const { englishLinkText, odiaLinkText, url, linkType } = req.body;
@@ -13,8 +11,6 @@ export const create = async (req, res) => {
     res.status(500).send({ message: error.message || "Error creating footer link." });
   }
 };
-
-// Retrieve all Footer Links, sorted by displayOrder
 export const findAll = async (req, res) => {
   try {
     const links = await Footerlink.findAll({ order: [['displayOrder', 'ASC']] });
@@ -23,9 +19,6 @@ export const findAll = async (req, res) => {
     res.status(500).send({ message: error.message || "Error retrieving footer links." });
   }
 };
-
-// --- ADDED: Find a single Footer Link by ID ---
-// This function is required for the Edit page to fetch existing data.
 export const findOne = async (req, res) => {
   const { id } = req.params;
   try {
@@ -39,8 +32,6 @@ export const findOne = async (req, res) => {
     res.status(500).send({ message: `Error retrieving Link with id=${id}.` });
   }
 };
-
-// Update a Footer Link by its ID
 export const update = async (req, res) => {
   const { id } = req.params;
   try {
@@ -55,8 +46,6 @@ export const update = async (req, res) => {
     res.status(500).send({ message: `Error updating link with id=${id}.` });
   }
 };
-
-// Delete a Footer Link by its ID
 export const destroy = async (req, res) => {
   const { id } = req.params;
   try {
@@ -70,8 +59,6 @@ export const destroy = async (req, res) => {
     res.status(500).send({ message: `Could not delete link with id=${id}.` });
   }
 };
-
-// Update the display order for all links
 export const updateOrder = async (req, res) => {
     const { order } = req.body;
     if (!Array.isArray(order)) {
@@ -98,13 +85,8 @@ export const toggleStatus = async (req, res) => {
     if (!link) {
       return res.status(404).send({ message: `Cannot find Link with id=${id}.` });
     }
-
-    // Toggle the status
     const newStatus = link.status === 'Active' ? 'Inactive' : 'Active';
-    
-    // Update the record with the new status
     await link.update({ status: newStatus });
-    
     res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
 
   } catch (error) {
