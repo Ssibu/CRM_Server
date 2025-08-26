@@ -3,6 +3,8 @@ import {sequelize} from "./models/index.js"
 import dotenv from "dotenv"
 import cors from "cors"
 import cookieParser from "cookie-parser"
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 
 
@@ -29,11 +31,13 @@ app.use(cors({
 app.use(cookieParser());
 
 app.use(express.json())
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 
 
-
+app.use(express.static(path.join(__dirname, '../public')));
 app.use("/auth", authRoutes)
 app.use("/pages", pageRoutes)
 app.use("/api/footerlinks", footerlinkRoutes);
