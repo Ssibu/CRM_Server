@@ -1,6 +1,6 @@
 import express from 'express';
 import { create, findAll, findOne, update, destroy, toggleStatus} from '../controllers/newsAndEvent.controller.js';
-import upload from '../middlewares/upload.js';
+import {upload} from '../middlewares/upload.js';
 const router = express.Router();
 router.post('/', upload({
     field: "document",
