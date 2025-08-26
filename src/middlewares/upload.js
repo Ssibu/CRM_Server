@@ -1,71 +1,100 @@
-import multer from 'multer';
-import path from 'path';
+import multer from "multer";
+import sharp from "sharp";
+import path from "path";
+import fs from "fs";
 
-// Set up the storage engine for Multer
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Files will be saved in the 'public/uploads' directory relative to the server root
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    // Create a unique filename to prevent overwrites
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+export const upload = (options = {}) => {
+  let {
+    mode, // optional, can be auto-detected
+    field = "file",
+    maxCount = 5,
+    uploadDir = "public/uploads/default",
+    allowedTypes = ["image/"],
+    maxSize = 5 * 1024 * 1024,
+    prefix = "file",
+    resize = true,
+    width = 400,
+    height = 400,
+  } = options;
+
+  // Auto-detect mode if not provided
+  if (!mode) {
+    if (Array.isArray(field)) mode = "fields";
+    else mode = "single"; // default
   }
-});
 
-// A mapping of allowed file extensions to their corresponding valid MIME types
-const allowedFileTypes = {
-    // Images
-    '.jpg': ['image/jpeg'],
-    '.jpeg': ['image/jpeg'],
-    '.png': ['image/png'],
-    '.webp': ['image/webp'],
-    '.gif': ['image/gif'],
-    
-    // Documents
-    '.pdf': ['application/pdf'],
-    '.doc': ['application/msword', 'application/octet-stream'], // Allow generic stream for older .doc
-    '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  const storage = multer.memoryStorage();
 
-    // --- ADDED: Excel Files ---
-    '.xls': ['application/vnd.ms-excel'],
-    '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-};
+  const fileFilter = (req, file, cb) => {
+    const isAllowed = allowedTypes.some((type) =>
+      file.mimetype.startsWith(type)
+    );
+    if (isAllowed) cb(null, true);
+    else cb(new Error(`Invalid file type: ${file.mimetype}`), false);
+  };
 
-// A robust function to validate the uploaded file
-const checkFileType = (file, cb) => {
-    // 1. Get the file extension from the original filename
-    const extension = path.extname(file.originalname).toLowerCase();
-    
-    // 2. Check if this extension is in our list of allowed types
-    const allowedMimeTypes = allowedFileTypes[extension];
-    
-    if (!allowedMimeTypes) {
-        // If the extension is not found, reject the file
-        return cb(new Error('Error: File extension not allowed!'));
+  const uploader = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: maxSize },
+  });
+
+  // Choose multer method dynamically
+  let multerMiddleware;
+  if (mode === "single") multerMiddleware = uploader.single(field);
+  else if (mode === "array") multerMiddleware = uploader.array(field, maxCount);
+  else if (mode === "fields") multerMiddleware = uploader.fields(field);
+  else throw new Error("Invalid upload mode");
+
+  const processFiles = async (req, res, next) => {
+    const files = req.file
+      ? [req.file]
+      : req.files
+      ? Object.values(req.files).flat()
+      : [];
+
+    if (!files.length) return next();
+
+    try {
+      const fullDir = path.resolve(uploadDir);
+      fs.mkdirSync(fullDir, { recursive: true });
+
+      for (const file of files) {
+        const ext =
+          path.extname(file.originalname) ||
+          (file.mimetype.startsWith("image/") ? ".jpeg" : "");
+        const filename = `${prefix}-${req.user?.userId || Date.now()}-${Date.now()}${ext}`;
+        const filepath = path.join(fullDir, filename);
+
+        if (file.mimetype.startsWith("image/")) {
+          let sharpInstance = sharp(file.buffer).toFormat("jpeg", { quality: 90 });
+
+          if (resize) {
+            sharpInstance = sharpInstance.resize(width, height, {
+              fit: "cover",
+              position: "center",
+            });
+          }
+
+          await sharpInstance.toFile(filepath);
+        } else {
+          fs.writeFileSync(filepath, file.buffer);
+        }
+
+        file.path = path.join(uploadDir.replace("public", ""), filename);
+
+        // Delete old file if provided
+        if (req.body.oldFilePath) {
+          const oldPath = path.join("public", req.body.oldFilePath);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        }
+      }
+
+      next();
+    } catch (err) {
+      res.status(500).json({ message: "File processing failed", error: err.message });
     }
-    
-    // 3. Check if the file's actual MIME type (reported by the browser)
-    //    matches one of the valid types for that extension.
-    if (allowedMimeTypes.includes(file.mimetype)) {
-        // Success, the file is valid
-        return cb(null, true);
-    } else {
-        // The extension is valid, but the MIME type is wrong. This could be a renamed file.
-        // For security, we reject it.
-        console.warn(`Warning: File "${file.originalname}" has extension "${extension}" but an incorrect MIME type "${file.mimetype}".`);
-        return cb(new Error('Error: File MIME type does not match its extension!'));
-    }
+  };
+
+  return [multerMiddleware, processFiles];
 };
-
-// Initialize the Multer upload middleware
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1024 * 1024 * 10 }, // Set a 10MB file size limit
-  fileFilter: (req, file, cb) => {
-    checkFileType(file, cb);
-  }
-}).single('document'); // This expects the file to be sent with the field name 'document'
-
-export default upload;
