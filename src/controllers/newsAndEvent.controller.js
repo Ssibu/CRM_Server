@@ -109,3 +109,23 @@ export const update = async (req, res) => {
     res.status(500).send({ message: `Error updating Event with id=${id}.` });
   }
 };
+export const toggleStatus = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const event = await NewsAndEvent.findByPk(id);
+    if (!event) {
+      return res.status(404).send({ message: `Cannot find Event with id=${id}.` });
+    }
+
+    // Toggle the status
+    const newStatus = event.status === 'Active' ? 'Inactive' : 'Active';
+    
+    // Update the record with the new status
+    await event.update({ status: newStatus });
+    
+    res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
+
+  } catch (error) {
+    res.status(500).send({ message: `Error toggling status for Event with id=${id}.` });
+  }
+};
