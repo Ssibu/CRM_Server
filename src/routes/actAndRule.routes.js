@@ -1,5 +1,5 @@
 import express from 'express';
-import { create, findAll,findOne, update, destroy, updateOrder } from '../controllers/actAndRule.controller.js';
+import { create, findAll,findOne, update, destroy, updateOrder, toggleStatus } from '../controllers/actAndRule.controller.js';
 
 const router = express.Router();
 
@@ -18,5 +18,6 @@ router.put('/:id', update);
 
 // Route to delete a specific Act & Rule by ID
 router.delete('/:id', destroy);
+router.patch('/status/:id', toggleStatus);
 
 export default router;

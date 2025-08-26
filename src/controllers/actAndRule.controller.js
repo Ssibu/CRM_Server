@@ -88,3 +88,23 @@ export const updateOrder = async (req, res) => {
         res.status(500).send({ message: "Failed to update order.", error: error.message });
     }
 };
+export const toggleStatus = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const actAndRule = await ActAndRule.findByPk(id);
+    if (!actAndRule) {
+      return res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
+    }
+
+    // Toggle the status
+    const newStatus = actAndRule.status === 'Active' ? 'Inactive' : 'Active';
+    
+    // Update the record with the new status
+    await actAndRule.update({ status: newStatus });
+    
+    res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
+
+  } catch (error) {
+    res.status(500).send({ message: `Error toggling status for Act & Rule with id=${id}.` });
+  }
+};
