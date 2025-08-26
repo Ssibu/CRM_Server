@@ -14,6 +14,7 @@ import footerlinkRoutes from "./routes/footerlink.routes.js";
 import actAndRuleRoutes from "./routes/actAndRule.routes.js"
 import newsAndEventRoutes from "./routes/newsAndEvent.routes.js"
 import policyRoutes from './routes/policy.routes.js';
+import schemeRoutes from './src/routes/scheme.routes.js';
 
 
 
@@ -44,7 +45,7 @@ app.use("/api/footerlinks", footerlinkRoutes);
 app.use("/api/act-and-rules", actAndRuleRoutes);
 app.use("/api/news-and-events", newsAndEventRoutes);
 app.use('/api/policies', policyRoutes);
-
+app.use('/api/schemes', schemeRoutes);
 
 const startServer = async () => {
   try {
