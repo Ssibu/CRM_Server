@@ -14,7 +14,7 @@ import footerlinkRoutes from "./routes/footerlink.routes.js";
 import actAndRuleRoutes from "./routes/actAndRule.routes.js"
 import newsAndEventRoutes from "./routes/newsAndEvent.routes.js"
 import policyRoutes from './routes/policy.routes.js';
-import schemeRoutes from './src/routes/scheme.routes.js';
+import schemeRoutes from './routes/scheme.routes.js';
 
 
 
