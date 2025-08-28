@@ -31,6 +31,7 @@ export const create = async (req, res) => {
 // No changes needed for findAll
 export const findAll = async (req, res) => {
   try {
+    // Get query params from the hook, with defaults
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const search = req.query.search || '';
@@ -38,15 +39,14 @@ export const findAll = async (req, res) => {
     const sortOrder = req.query.order || 'ASC';
 
     // Security: Whitelist sortable columns
-    const allowedSortColumns = ['id', 'titleEnglish', 'titleOdia', 'eventDate', 'status', 'createdAt'];
+    const allowedSortColumns = ['id', 'titleEnglish', 'titleOdia', 'eventDate', 'status', 'createdAt', 'displayOrder'];
     if (!allowedSortColumns.includes(sortBy)) {
       sortBy = 'displayOrder'; // Fallback to a safe default
     }
 
     const offset = (page - 1) * limit;
 
-    // Your model might have a soft-delete flag, e.g., `is_delete: false`
-    // If so, add it to the whereClause
+    // Build the search clause
     const whereClause = search ? {
       [Op.or]: [
         { titleEnglish: { [Op.like]: `%${search}%` } },
@@ -54,6 +54,7 @@ export const findAll = async (req, res) => {
       ],
     } : {};
 
+    // Use findAndCountAll to get both the data rows and the total count
     const { count, rows } = await NewsAndEvent.findAndCountAll({
       where: whereClause,
       order: [[sortBy, sortOrder.toUpperCase()]],
@@ -61,6 +62,8 @@ export const findAll = async (req, res) => {
       offset: offset,
     });
 
+    // --- THIS IS THE CRITICAL FIX ---
+    // Return the data in the object format that the frontend hook expects
     return res.json({
       total: count,
       data: rows,
