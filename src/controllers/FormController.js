@@ -1,4 +1,4 @@
-import Form from '../models/Form';
+import Form from '../models/Form.js';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
