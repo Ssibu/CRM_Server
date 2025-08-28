@@ -32,6 +32,7 @@ import menuRoutes from './routes/MenuRoutes.js';
 import subMenuRoutes from './routes/SubMenuRoutes.js';
 import subSubMenuRoutes from './routes/SubSubMenuRoutes.js'; 
 import FormRoutes from './routes/FormRoutes.js';
+import BedStrengthRoutes from './routes/BedStrengthRroutes.js';
 
 const app = express()
 const PORT = process.env.PORT;
@@ -72,6 +73,8 @@ app.use('/api/menus', menuRoutes);
 app.use('/api/submenus', subMenuRoutes);
 app.use('/api/subsubmenus', subSubMenuRoutes);
 app.use('/api/forms',FormRoutes);
+app.use('/api/bed-strengths', BedStrengthRoutes);
+
 
 async function startServer() {
    app.listen(PORT, () => {
