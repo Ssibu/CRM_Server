@@ -71,6 +71,7 @@ app.use('/api/chatbot-answers', chatbotAnswerRoutes);
 app.use('/api/menus', menuRoutes);
 app.use('/api/submenus', subMenuRoutes);
 app.use('/api/subsubmenus', subSubMenuRoutes);
+app.use('/api/forms',FormRoutes);
 
 async function startServer() {
    app.listen(PORT, () => {
