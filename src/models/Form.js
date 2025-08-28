@@ -23,9 +23,10 @@ const Form = sequelize.define('Form', {
         type: DataTypes.BOOLEAN,
         defaultValue: false, // For soft deletes
     },
-    displayOrder: {
+    displayOrder: { // <-- Property name in JavaScript is camelCase
         type: DataTypes.INTEGER,
         defaultValue: 0,
+        field: 'display_order' // <-- Tell Sequelize the DB column name is snake_case
     }
     // 'created_at' and 'updated_at' are handled by Sequelize automatically
 }, {
