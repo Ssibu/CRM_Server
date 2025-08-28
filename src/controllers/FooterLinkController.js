@@ -1,4 +1,5 @@
 import Footerlink from '../models/FooterLink.js';
+import { Op } from 'sequelize';
 export const create = async (req, res) => {
   try {
     const { englishLinkText, odiaLinkText, url, linkType } = req.body;
@@ -13,10 +14,48 @@ export const create = async (req, res) => {
 };
 export const findAll = async (req, res) => {
   try {
-    const links = await Footerlink.findAll({ order: [['displayOrder', 'ASC']] });
-    res.status(200).send(links);
+    // Get query params from the hook, with defaults
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const search = req.query.search || '';
+    let sortBy = req.query.sort || 'displayOrder';
+    const sortOrder = req.query.order || 'ASC';
+
+    // Security: Whitelist sortable columns
+    const allowedSortColumns = ['id', 'englishLinkText', 'odiaLinkText', 'linkType', 'status', 'createdAt', 'displayOrder'];
+    if (!allowedSortColumns.includes(sortBy)) {
+      sortBy = 'displayOrder'; // Fallback to a safe default
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Build the search clause
+    const whereClause = search ? {
+      // is_delete: false, // Add this if your model has a soft delete flag
+      [Op.or]: [
+        { englishLinkText: { [Op.like]: `%${search}%` } },
+        { odiaLinkText: { [Op.like]: `%${search}%` } },
+        { linkType: { [Op.like]: `%${search}%` } },
+      ],
+    } : { /* is_delete: false */ };
+
+    // Use findAndCountAll to get both the data rows and the total count
+    const { count, rows } = await Footerlink.findAndCountAll({
+      where: whereClause,
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: limit,
+      offset: offset,
+    });
+
+    // Return the data in the format the frontend hook expects
+    return res.json({
+      total: count,
+      data: rows,
+    });
+
   } catch (error) {
-    res.status(500).send({ message: error.message || "Error retrieving footer links." });
+    console.error("Server Error in findAll Footerlinks:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 export const findOne = async (req, res) => {
