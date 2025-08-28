@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../../config/db';
+import sequelize from '../../config/db.js';
 
 const Form = sequelize.define('Form', {
     // 'id' is created automatically by Sequelize

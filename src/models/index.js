@@ -137,6 +137,7 @@ import ChatbotAnswer from './ChatbotAnswer.js';
 import Menu from './Menu.js';
 import SubMenu from './SubMenu.js';
 import SubSubMenu from './SubSubMenu.js';
+import Form from './Form.js';
 
 const models = {
   sequelize,
@@ -163,6 +164,7 @@ const models = {
   Menu,
   SubMenu,
   SubSubMenu,
+  Form
 };
 
 Object.values(models).forEach((model) => {
