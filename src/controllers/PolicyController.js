@@ -1,6 +1,7 @@
 import Policy from '../models/Policy.js';
 import fs from 'fs';
 import path from 'path';
+import { Op } from 'sequelize';
 
 // --- Helper to manage file deletion ---
 const deleteFile = (filePath) => {
@@ -28,15 +29,49 @@ export const create = async (req, res) => {
 
 // Find all Policies (that are not soft-deleted)
 export const findAll = async (req, res) => {
-    try {
-        const policies = await Policy.findAll({ 
-            where: { is_delete: false }, // Only fetch non-deleted items
-            order: [['displayOrder', 'ASC']] 
-        });
-        res.status(200).send(policies);
-    } catch (error) {
-        res.status(500).send({ message: error.message });
+  try {
+    // Get query params from the hook, with defaults
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const search = req.query.search || '';
+    let sortBy = req.query.sort || 'displayOrder';
+    const sortOrder = req.query.order || 'ASC';
+
+    // Security: Whitelist sortable columns
+    const allowedSortColumns = ['id', 'en_title', 'od_title', 'is_active', 'created_at', 'displayOrder'];
+    if (!allowedSortColumns.includes(sortBy)) {
+      sortBy = 'displayOrder'; // Fallback to a safe default
     }
+
+    const offset = (page - 1) * limit;
+
+    // Build the search clause and ensure soft-deleted items are excluded
+    const whereClause = search ? {
+      is_delete: false,
+      [Op.or]: [
+        { en_title: { [Op.like]: `%${search}%` } },
+        { od_title: { [Op.like]: `%${search}%` } },
+      ],
+    } : { is_delete: false };
+
+    // Use findAndCountAll to get both the data rows and the total count
+    const { count, rows } = await Policy.findAndCountAll({
+      where: whereClause,
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: limit,
+      offset: offset,
+    });
+
+    // Return the data in the format the frontend hook expects
+    return res.json({
+      total: count,
+      data: rows,
+    });
+
+  } catch (error) {
+    console.error("Server Error in findAll Policies:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 // Find one Policy by ID
