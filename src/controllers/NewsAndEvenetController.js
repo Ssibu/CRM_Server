@@ -1,6 +1,7 @@
 import NewsAndEvent from '../models/NewsAndEvent.js';
 import fs from 'fs';
 import path from 'path';
+import { Op } from 'sequelize';
 
 // CORRECTED: create function is now simpler
 export const create = async (req, res) => {
@@ -30,10 +31,44 @@ export const create = async (req, res) => {
 // No changes needed for findAll
 export const findAll = async (req, res) => {
   try {
-    const events = await NewsAndEvent.findAll({ order: [['displayOrder', 'ASC']] });
-    res.status(200).send(events);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const search = req.query.search || '';
+    let sortBy = req.query.sort || 'displayOrder';
+    const sortOrder = req.query.order || 'ASC';
+
+    // Security: Whitelist sortable columns
+    const allowedSortColumns = ['id', 'titleEnglish', 'titleOdia', 'eventDate', 'status', 'createdAt'];
+    if (!allowedSortColumns.includes(sortBy)) {
+      sortBy = 'displayOrder'; // Fallback to a safe default
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Your model might have a soft-delete flag, e.g., `is_delete: false`
+    // If so, add it to the whereClause
+    const whereClause = search ? {
+      [Op.or]: [
+        { titleEnglish: { [Op.like]: `%${search}%` } },
+        { titleOdia: { [Op.like]: `%${search}%` } },
+      ],
+    } : {};
+
+    const { count, rows } = await NewsAndEvent.findAndCountAll({
+      where: whereClause,
+      order: [[sortBy, sortOrder.toUpperCase()]],
+      limit: limit,
+      offset: offset,
+    });
+
+    return res.json({
+      total: count,
+      data: rows,
+    });
+
   } catch (error) {
-    res.status(500).send({ message: error.message || "Error retrieving News & Events." });
+    console.error("Server Error in findAll NewsAndEvents:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
