@@ -94,15 +94,45 @@ export const findOne = async (req, res) => {
 };
 export const update = async (req, res) => {
   const { id } = req.params;
+  const { titleEnglish, titleOdia } = req.body;
+
   try {
-    const [updated] = await ActAndRule.update(req.body, { where: { id: id } });
-    if (updated) {
-      const updatedRecord = await ActAndRule.findByPk(id);
-      res.status(200).send(updatedRecord);
-    } else {
-      res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
+    // --- 1. VALIDATION: Check for duplicates on other records ---
+    if (titleEnglish || titleOdia) { // Only check if a title is being updated
+      const existingRecord = await ActAndRule.findOne({
+        where: {
+          [Op.or]: [
+            { titleEnglish: titleEnglish || '' },
+            { titleOdia: titleOdia || '' }
+          ],
+          id: {
+            [Op.ne]: id // Crucial: Exclude the current record (ne = Not Equal)
+          }
+        }
+      });
+
+      if (existingRecord) {
+        // A different record with this title already exists.
+        return res.status(409).send({ message: "Another Act or Rule with this title already exists." });
+      }
     }
+    // --- END VALIDATION ---
+
+    // Find the record to update
+    const actAndRule = await ActAndRule.findByPk(id);
+    if (!actAndRule) {
+      return res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
+    }
+
+    // If validation passes, proceed to update
+    await actAndRule.update(req.body);
+    
+    res.status(200).send(actAndRule);
+
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).send({ message: 'This title already exists.' });
+    }
     res.status(500).send({ message: `Error updating Act & Rule with id=${id}.` });
   }
 };
