@@ -7,19 +7,21 @@ const NewsAndEvent = sequelize.define(
     titleEnglish: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate English titles
     },
     titleOdia: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate Odia titles
     },
     eventDate: {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-    // descriptionEnglish and descriptionOdia have been removed
     document: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Ensures every file path is unique in the DB
     },
     status: {
       type: DataTypes.STRING,
