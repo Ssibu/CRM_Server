@@ -3,12 +3,34 @@ import ActAndRule from '../models/ActAndRules.js';
 export const create = async (req, res) => {
   try {
     const { titleEnglish, titleOdia, descriptionEnglish, descriptionOdia } = req.body;
-    if (!titleEnglish || !titleOdia || !descriptionEnglish || !descriptionOdia) {
-      return res.status(400).send({ message: "All fields are required!" });
+
+    // --- 1. VALIDATION: Check for duplicates ---
+    const existingRecord = await ActAndRule.findOne({
+      where: {
+        [Op.or]: [
+          { titleEnglish: titleEnglish },
+          { titleOdia: titleOdia }
+        ]
+      }
+    });
+
+    if (existingRecord) {
+      // Use status 409 Conflict for duplicate data errors
+      return res.status(409).send({ message: "An Act or Rule with this English or Odia title already exists." });
     }
-    const newActAndRule = await ActAndRule.create(req.body);
+    // --- END VALIDATION ---
+    
+    // If no duplicate is found, proceed to create the new record
+    const newActAndRule = await ActAndRule.create({
+        titleEnglish,
+        titleOdia,
+        descriptionEnglish,
+        descriptionOdia
+    });
+
     res.status(201).send(newActAndRule);
   } catch (error) {
+    // This will catch other errors, like database connection issues
     res.status(500).send({ message: error.message || "Error creating Act & Rule." });
   }
 };
