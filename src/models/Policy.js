@@ -2,39 +2,47 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../../config/db.js';
 
 const Policy = sequelize.define('Policy', {
-    // id is created automatically by Sequelize
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate English titles
+        field: 'en_title' // Explicitly map to the snake_case column
     },
     od_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate Odia titles
+        field: 'od_title'
     },
     document: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate document paths
+        field: 'document'
     },
     is_active: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true, // Corresponds to tinyint(1) default 1
+        defaultValue: true,
+        field: 'is_active'
     },
     is_delete: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false, // Corresponds to tinyint(1) default 0
+        defaultValue: false,
+        field: 'is_delete'
     },
-    // created_at and updated_at are handled by `timestamps: true`
-    displayOrder: { // Adding this for the sorting feature
+    displayOrder: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
+        field: 'display_order' // Map to display_order column
     }
 }, {
     tableName: 'policies',
     timestamps: true,
-    // Map snake_case database columns to camelCase model properties
     createdAt: 'created_at',
     updatedAt: 'updated_at',
-    underscored: true, // This is important for Sequelize to handle snake_case
+    // The underscored option is still good to have as a fallback,
+    // but explicit 'field' mapping is safer.
+    underscored: true, 
 });
 
 export default Policy;
