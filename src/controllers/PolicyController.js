@@ -6,24 +6,42 @@ import { Op } from 'sequelize';
 // --- Helper to manage file deletion ---
 const deleteFile = (filePath) => {
     if (filePath) {
-        const fullPath = path.join('public', filePath.slice(1));
-        if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-        }
+        const fullPath = path.join('public', filePath.startsWith('/') ? filePath.slice(1) : filePath);
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     }
 };
 
-// Create a new Policy
+// --- UPDATED `create` FUNCTION ---
 export const create = async (req, res) => {
     try {
         const { en_title, od_title } = req.body;
         if (!req.file || !en_title || !od_title) {
             return res.status(400).send({ message: "All fields and a document are required." });
         }
+
+        // Validation: Check for duplicates before creating
+        const existingPolicy = await Policy.findOne({
+          where: {
+            is_delete: false,
+            [Op.or]: [
+              { en_title: en_title },
+              { od_title: od_title },
+              { document: req.file.path }
+            ]
+          }
+        });
+
+        if (existingPolicy) {
+          return res.status(409).send({ message: "A policy with this title or document already exists." });
+        }
+
         const newPolicy = await Policy.create({ ...req.body, document: req.file.path });
         res.status(201).send(newPolicy);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
+        res.status(500).send({ message: error.message || "Error creating Policy." });
     }
 };
 
@@ -86,8 +104,32 @@ export const findOne = async (req, res) => {
 
 // Update a Policy
 export const update = async (req, res) => {
+    const { id } = req.params;
+    const { en_title, od_title } = req.body;
     try {
-        const policy = await Policy.findByPk(req.params.id);
+        // Validation: Check for duplicates on OTHER records
+        if (en_title || od_title || req.file) {
+            const potentialDuplicates = [];
+            if (en_title) potentialDuplicates.push({ en_title });
+            if (od_title) potentialDuplicates.push({ od_title });
+            if (req.file) potentialDuplicates.push({ document: req.file.path });
+
+            const existingPolicy = await Policy.findOne({
+                where: {
+                    is_delete: false,
+                    [Op.or]: potentialDuplicates,
+                    id: {
+                        [Op.ne]: id // Exclude the current record
+                    }
+                }
+            });
+
+            if (existingPolicy) {
+                return res.status(409).send({ message: "Another policy with this title or document already exists." });
+            }
+        }
+
+        const policy = await Policy.findByPk(id);
         if (!policy) return res.status(404).send({ message: "Policy not found." });
         
         const updatedData = { ...req.body, document: req.file ? req.file.path : policy.document };
@@ -96,7 +138,10 @@ export const update = async (req, res) => {
         await policy.update(updatedData);
         res.status(200).send(policy);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
+        res.status(500).send({ message: error.message || "Error updating Policy." });
     }
 };
 
