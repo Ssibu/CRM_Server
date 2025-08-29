@@ -8,14 +8,17 @@ const Footerlink = sequelize.define(
     englishLinkText: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate English link text
     },
     odiaLinkText: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate Odia link text
     },
     url: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate URLs
     },
     linkType: {
       type: DataTypes.ENUM('Internal', 'External'),
