@@ -8,13 +8,15 @@ const ActAndRule = sequelize.define(
     titleEnglish: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate English titles
     },
     titleOdia: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true // <-- ADDED: Prevents duplicate Odia titles
     },
     descriptionEnglish: {
-      type: DataTypes.TEXT, // TEXT is best for storing HTML content from a rich text editor
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     descriptionOdia: {
@@ -31,8 +33,8 @@ const ActAndRule = sequelize.define(
     },
   },
   {
-    tableName: 'act_and_rules', // Explicitly set the table name
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    tableName: 'act_and_rules',
+    timestamps: true,
   }
 );
 
