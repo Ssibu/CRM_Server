@@ -9,6 +9,7 @@
 # It's generated locally by running `npm install` and can be huge.
 /node_modules
 
+/public
 
 # Package lock files from other package managers if you are not using them.
 # Usually, you commit the lock file for the package manager you ARE using
