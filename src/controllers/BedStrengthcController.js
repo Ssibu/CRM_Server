@@ -11,16 +11,36 @@ const deleteFile = (filePath) => {
     }
 };
 
-// Create a new Bed Strength record
+// --- UPDATED `create` FUNCTION ---
 export const create = async (req, res) => {
     try {
         const { en_title, od_title } = req.body;
         if (!req.file || !en_title || !od_title) {
             return res.status(400).send({ message: "All fields and a document are required." });
         }
+
+        // Validation: Check for duplicates before creating
+        const existingRecord = await BedStrength.findOne({
+          where: {
+            is_delete: false,
+            [Op.or]: [
+              { en_title: en_title },
+              { od_title: od_title },
+              { document: req.file.path }
+            ]
+          }
+        });
+
+        if (existingRecord) {
+          return res.status(409).send({ message: "A record with this title or document already exists." });
+        }
+
         const newRecord = await BedStrength.create({ ...req.body, document: req.file.path });
         res.status(201).send(newRecord);
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
         res.status(500).send({ message: error.message || "Error creating Bed Strength record." });
     }
 };
@@ -79,8 +99,32 @@ export const findOne = async (req, res) => {
 
 // Update a Bed Strength record
 export const update = async (req, res) => {
+    const { id } = req.params;
+    const { en_title, od_title } = req.body;
     try {
-        const record = await BedStrength.findByPk(req.params.id);
+        // Validation: Check for duplicates on OTHER records
+        if (en_title || od_title || req.file) {
+            const potentialDuplicates = [];
+            if (en_title) potentialDuplicates.push({ en_title });
+            if (od_title) potentialDuplicates.push({ od_title });
+            if (req.file) potentialDuplicates.push({ document: req.file.path });
+
+            const existingRecord = await BedStrength.findOne({
+                where: {
+                    is_delete: false,
+                    [Op.or]: potentialDuplicates,
+                    id: {
+                        [Op.ne]: id // Exclude the current record
+                    }
+                }
+            });
+
+            if (existingRecord) {
+                return res.status(409).send({ message: "Another record with this title or document already exists." });
+            }
+        }
+
+        const record = await BedStrength.findByPk(id);
         if (!record) return res.status(404).send({ message: "Record not found." });
         
         const updatedData = { ...req.body, document: req.file ? req.file.path : record.document };
@@ -89,10 +133,12 @@ export const update = async (req, res) => {
         await record.update(updatedData);
         res.status(200).send(record);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
+        res.status(500).send({ message: error.message || "Error updating record." });
     }
 };
-
 // Soft Delete a Bed Strength record
 export const destroy = async (req, res) => {
     try {
