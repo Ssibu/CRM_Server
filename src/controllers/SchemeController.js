@@ -6,25 +6,42 @@ import { Op } from 'sequelize';
 // Helper to safely delete a file
 const deleteFile = (filePath) => {
     if (filePath) {
-        // Construct full path from the public directory
-        const fullPath = path.join('public', filePath.slice(1));
-        if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-        }
+        const fullPath = path.join('public', filePath.startsWith('/') ? filePath.slice(1) : filePath);
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     }
 };
 
-// Create a new Scheme
+// --- UPDATED `create` FUNCTION ---
 export const create = async (req, res) => {
     try {
         const { en_title, od_title } = req.body;
         if (!req.file || !en_title || !od_title) {
             return res.status(400).send({ message: "All fields and a document are required." });
         }
+
+        // Validation: Check for duplicates before creating
+        const existingScheme = await Scheme.findOne({
+          where: {
+            is_delete: false,
+            [Op.or]: [
+              { en_title: en_title },
+              { od_title: od_title },
+              { document: req.file.path }
+            ]
+          }
+        });
+
+        if (existingScheme) {
+          return res.status(409).send({ message: "A scheme with this title or document already exists." });
+        }
+
         const newScheme = await Scheme.create({ ...req.body, document: req.file.path });
         res.status(201).send(newScheme);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
+        res.status(500).send({ message: error.message || "Error creating Scheme." });
     }
 };
 
@@ -91,8 +108,32 @@ export const findOne = async (req, res) => {
 
 // Update a Scheme
 export const update = async (req, res) => {
+    const { id } = req.params;
+    const { en_title, od_title } = req.body;
     try {
-        const scheme = await Scheme.findByPk(req.params.id);
+        // Validation: Check for duplicates on OTHER records
+        if (en_title || od_title || req.file) {
+            const potentialDuplicates = [];
+            if (en_title) potentialDuplicates.push({ en_title });
+            if (od_title) potentialDuplicates.push({ od_title });
+            if (req.file) potentialDuplicates.push({ document: req.file.path });
+
+            const existingScheme = await Scheme.findOne({
+                where: {
+                    is_delete: false,
+                    [Op.or]: potentialDuplicates,
+                    id: {
+                        [Op.ne]: id // Exclude the current record
+                    }
+                }
+            });
+
+            if (existingScheme) {
+                return res.status(409).send({ message: "Another scheme with this title or document already exists." });
+            }
+        }
+
+        const scheme = await Scheme.findByPk(id);
         if (!scheme) return res.status(404).send({ message: "Scheme not found." });
         
         const updatedData = { ...req.body, document: req.file ? req.file.path : scheme.document };
@@ -101,7 +142,10 @@ export const update = async (req, res) => {
         await scheme.update(updatedData);
         res.status(200).send(scheme);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
+        res.status(500).send({ message: error.message || "Error updating Scheme." });
     }
 };
 
