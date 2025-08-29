@@ -7,22 +7,40 @@ import { Op } from 'sequelize';
 const deleteFile = (filePath) => {
     if (filePath) {
         const fullPath = path.join('public', filePath.startsWith('/') ? filePath.slice(1) : filePath);
-        if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-        }
+        if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     }
 };
 
-// Create a new Form
+// --- UPDATED `create` FUNCTION ---
 export const create = async (req, res) => {
     try {
         const { en_title, od_title } = req.body;
         if (!req.file || !en_title || !od_title) {
             return res.status(400).send({ message: "All fields and a document are required." });
         }
+
+        // Validation: Check for duplicates before creating
+        const existingForm = await Form.findOne({
+          where: {
+            is_delete: false,
+            [Op.or]: [
+              { en_title: en_title },
+              { od_title: od_title },
+              { document: req.file.path }
+            ]
+          }
+        });
+
+        if (existingForm) {
+          return res.status(409).send({ message: "A form with this title or document already exists." });
+        }
+
         const newForm = await Form.create({ ...req.body, document: req.file.path });
         res.status(201).send(newForm);
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
         res.status(500).send({ message: error.message || "Error creating Form." });
     }
 };
@@ -90,8 +108,32 @@ export const findOne = async (req, res) => {
 
 // Update a Form
 export const update = async (req, res) => {
+    const { id } = req.params;
+    const { en_title, od_title } = req.body;
     try {
-        const form = await Form.findByPk(req.params.id);
+        // Validation: Check for duplicates on OTHER records
+        if (en_title || od_title || req.file) {
+            const potentialDuplicates = [];
+            if (en_title) potentialDuplicates.push({ en_title });
+            if (od_title) potentialDuplicates.push({ od_title });
+            if (req.file) potentialDuplicates.push({ document: req.file.path });
+
+            const existingForm = await Form.findOne({
+                where: {
+                    is_delete: false,
+                    [Op.or]: potentialDuplicates,
+                    id: {
+                        [Op.ne]: id // Exclude the current record
+                    }
+                }
+            });
+
+            if (existingForm) {
+                return res.status(409).send({ message: "Another form with this title or document already exists." });
+            }
+        }
+
+        const form = await Form.findByPk(id);
         if (!form) return res.status(404).send({ message: "Form not found." });
         
         const updatedData = { ...req.body, document: req.file ? req.file.path : form.document };
@@ -100,6 +142,9 @@ export const update = async (req, res) => {
         await form.update(updatedData);
         res.status(200).send(form);
     } catch (error) {
+        if (error.name === 'SequelizeUniqueConstraintError') {
+          return res.status(409).send({ message: 'This title or document already exists.' });
+        }
         res.status(500).send({ message: error.message || "Error updating Form." });
     }
 };
