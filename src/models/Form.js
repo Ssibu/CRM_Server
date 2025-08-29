@@ -2,40 +2,47 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../../config/db.js';
 
 const Form = sequelize.define('Form', {
-    // 'id' is created automatically by Sequelize
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate English titles
+        field: 'en_title'
     },
     od_title: {
-        type: DataTypes.STRING, // Using STRING is fine for titles
+        type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate Odia titles
+        field: 'od_title'
     },
     document: {
-        type: DataTypes.STRING, // Stores the file path from the uploader
+        type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // <-- ADDED: Prevents duplicate document paths
+        field: 'document'
     },
     is_active: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true, // Corresponds to tinyint(1) default 1
+        defaultValue: true,
+        field: 'is_active'
     },
     is_delete: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false, // For soft deletes
+        defaultValue: false,
+        field: 'is_delete'
     },
-    displayOrder: { // <-- Property name in JavaScript is camelCase
+    displayOrder: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
-        field: 'display_order' // <-- Tell Sequelize the DB column name is snake_case
+        // Assuming your 'forms' table also uses display_order (snake_case)
+        // If it uses displayOrder (camelCase), change this to 'displayOrder'
+        field: 'display_order' 
     }
-    // 'created_at' and 'updated_at' are handled by Sequelize automatically
 }, {
     tableName: 'forms',
     timestamps: true,
-    // These options map snake_case in DB to camelCase in JS if needed,
-    // but we will stick to snake_case in the model for consistency with your schema.
     createdAt: 'created_at',
     updatedAt: 'updated_at',
+    underscored: true // Keep for consistency
 });
 
 export default Form;
