@@ -4,11 +4,30 @@ export const create = async (req, res) => {
   try {
     const { englishLinkText, odiaLinkText, url, linkType } = req.body;
     if (!englishLinkText || !odiaLinkText || !url) {
-      return res.status(400).send({ message: "Link text and URL are required!" });
+      return res.status(400).send({ message: "All link text and URL fields are required!" });
     }
+
+    // Validation: Check for duplicates before creating
+    const existingLink = await Footerlink.findOne({
+      where: {
+        [Op.or]: [
+          { englishLinkText: englishLinkText },
+          { odiaLinkText: odiaLinkText },
+          { url: url }
+        ]
+      }
+    });
+
+    if (existingLink) {
+      return res.status(409).send({ message: "A footer link with this text or URL already exists." });
+    }
+
     const newLink = await Footerlink.create({ englishLinkText, odiaLinkText, url, linkType });
     res.status(201).send(newLink);
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).send({ message: 'This link text or URL already exists.' });
+    }
     res.status(500).send({ message: error.message || "Error creating footer link." });
   }
 };
@@ -73,7 +92,29 @@ export const findOne = async (req, res) => {
 };
 export const update = async (req, res) => {
   const { id } = req.params;
+  const { englishLinkText, odiaLinkText, url } = req.body;
+
   try {
+    // Validation: Check for duplicates on OTHER records before updating
+    if (englishLinkText || odiaLinkText || url) {
+      const existingLink = await Footerlink.findOne({
+        where: {
+          [Op.or]: [
+            { englishLinkText: englishLinkText || '' },
+            { odiaLinkText: odiaLinkText || '' },
+            { url: url || '' }
+          ],
+          id: {
+            [Op.ne]: id // Exclude the current link from the check
+          }
+        }
+      });
+
+      if (existingLink) {
+        return res.status(409).send({ message: "Another footer link with this text or URL already exists." });
+      }
+    }
+
     const [updated] = await Footerlink.update(req.body, { where: { id: id } });
     if (updated) {
       const updatedLink = await Footerlink.findByPk(id);
@@ -82,6 +123,9 @@ export const update = async (req, res) => {
       res.status(404).send({ message: `Cannot find link with id=${id}.` });
     }
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).send({ message: 'This link text or URL already exists.' });
+    }
     res.status(500).send({ message: `Error updating link with id=${id}.` });
   }
 };
