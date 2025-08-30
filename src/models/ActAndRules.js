@@ -14,7 +14,7 @@ const ActAndRule = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
       unique: true // <-- ADDED: Prevents duplicate Odia titles
-    },
+    }, 
     descriptionEnglish: {
       type: DataTypes.TEXT,
       allowNull: false,
