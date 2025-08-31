@@ -76,5 +76,5 @@ export const hasPermission = (pageShortCode) => {
       console.error("Error checking permission:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
-  };
+  }; 
 };
