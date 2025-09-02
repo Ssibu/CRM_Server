@@ -119,18 +119,29 @@ export const update = async (req, res) => {
         const policy = await Policy.findByPk(id);
         if (!policy) return res.status(404).json({ message: "Policy not found." });
 
-        let { en_title, od_title } = req.body;
-        // Use the helper to clean the titles
+        // Get all potential inputs from the form
+        let { en_title, od_title, removeExistingDocument } = req.body;
+        const shouldRemoveDocument = removeExistingDocument === 'true';
+
         en_title = normalizeTitle(en_title);
         od_title = normalizeTitle(od_title);
-        
-        const documentFilename = req.file ? path.basename(req.file.path) : policy.document;
-        
+
+        // Determine the final filename
+        let finalDocumentFilename = policy.document;
+        if (req.file) {
+            finalDocumentFilename = path.basename(req.file.path);
+        } else if (shouldRemoveDocument) {
+            finalDocumentFilename = null;
+        }
+
+        // Check for duplicates if anything unique is changing
         const potentialDuplicates = [];
         if (en_title && en_title !== policy.en_title) potentialDuplicates.push({ en_title });
         if (od_title && od_title !== policy.od_title) potentialDuplicates.push({ od_title });
-        if (req.file) potentialDuplicates.push({ document: documentFilename });
-
+        if (finalDocumentFilename && finalDocumentFilename !== policy.document) {
+            potentialDuplicates.push({ document: finalDocumentFilename });
+        }
+        
         if (potentialDuplicates.length > 0) {
             const existingPolicy = await Policy.findOne({
                 where: {
@@ -144,11 +155,19 @@ export const update = async (req, res) => {
             }
         }
         
-        if (req.file && policy.document) {
+        // Handle physical file deletion
+        if ((req.file || shouldRemoveDocument) && policy.document) {
             deleteFile(policy.document);
         }
         
-        await policy.update({ ...req.body, en_title, od_title, document: documentFilename });
+        // Update the database record
+        await policy.update({ 
+            ...req.body, 
+            en_title, 
+            od_title, 
+            document: finalDocumentFilename 
+        });
+
         res.status(200).json({ message: "Policy updated successfully!", data: policy });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -157,7 +176,6 @@ export const update = async (req, res) => {
         res.status(500).json({ message: error.message || "Error updating Policy." });
     }
 };
-
 // Soft Delete a Policy
 export const destroy = async (req, res) => {
     try {
