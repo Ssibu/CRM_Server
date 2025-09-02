@@ -6,16 +6,16 @@ const Form = sequelize.define('Form', {
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        unique: true 
     },
     od_title: {
         type: DataTypes.STRING, // Using STRING is fine for titles
         allowNull: false,
-        unique: true
+        unique: true 
     },
-    document: {
+     document: {
         type: DataTypes.STRING,
-        allowNull: true, // <-- CHANGE THIS from false to true
+        allowNull: true, // --- CORRECTED: Document is now optional ---
         unique: true,
         field: 'document'
     },
