@@ -108,16 +108,32 @@ export const update = async (req, res) => {
         const record = await BedStrength.findByPk(id);
         if (!record) return res.status(404).json({ message: "Record not found." });
 
-        let { en_title, od_title } = req.body;
+        // --- 1. GET ALL POTENTIAL INPUTS FROM THE FORM ---
+        let { en_title, od_title, removeExistingDocument } = req.body;
+        const shouldRemoveDocument = removeExistingDocument === 'true';
+
         en_title = normalizeTitle(en_title);
         od_title = normalizeTitle(od_title);
-        const documentFilename = req.file ? path.basename(req.file.path) : record.document;
-        
+
+        // --- 2. DETERMINE THE FINAL FILENAME ---
+        let finalDocumentFilename = record.document; // Default to the current filename
+        if (req.file) {
+            // If a new file is uploaded, it becomes the final filename
+            finalDocumentFilename = path.basename(req.file.path);
+        } else if (shouldRemoveDocument) {
+            // If no new file, but removal is requested, the final filename is null
+            finalDocumentFilename = null;
+        }
+
+        // --- 3. CHECK FOR DUPLICATES (IF ANYTHING UNIQUE IS CHANGING) ---
         const potentialDuplicates = [];
         if (en_title && en_title !== record.en_title) potentialDuplicates.push({ en_title });
         if (od_title && od_title !== record.od_title) potentialDuplicates.push({ od_title });
-        if (req.file) potentialDuplicates.push({ document: documentFilename });
-
+        // Only check for document uniqueness if the filename is actually changing to something new
+        if (finalDocumentFilename && finalDocumentFilename !== record.document) {
+            potentialDuplicates.push({ document: finalDocumentFilename });
+        }
+        
         if (potentialDuplicates.length > 0) {
             const existingRecord = await BedStrength.findOne({
                 where: {
@@ -131,11 +147,20 @@ export const update = async (req, res) => {
             }
         }
         
-        if (req.file && record.document) {
+        // --- 4. HANDLE PHYSICAL FILE DELETION ---
+        // Delete the old file if a new one was uploaded OR if removal was requested
+        if ((req.file || shouldRemoveDocument) && record.document) {
             deleteFile(record.document);
         }
         
-        await record.update({ ...req.body, en_title, od_title, document: documentFilename });
+        // --- 5. UPDATE THE DATABASE RECORD ---
+        await record.update({ 
+            ...req.body, 
+            en_title, 
+            od_title, 
+            document: finalDocumentFilename 
+        });
+
         res.status(200).json({ message: "Record updated successfully!", data: record });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
