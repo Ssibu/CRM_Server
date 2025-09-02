@@ -6,14 +6,18 @@ const Form = sequelize.define('Form', {
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true
     },
     od_title: {
         type: DataTypes.STRING, // Using STRING is fine for titles
         allowNull: false,
+        unique: true
     },
     document: {
-        type: DataTypes.STRING, // Stores the file path from the uploader
-        allowNull: false,
+        type: DataTypes.STRING,
+        allowNull: true, // <-- CHANGE THIS from false to true
+        unique: true,
+        field: 'document'
     },
     is_active: {
         type: DataTypes.BOOLEAN,
