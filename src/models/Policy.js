@@ -6,14 +6,18 @@ const Policy = sequelize.define('Policy', {
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true,
     },
     od_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true,
     },
-    document: {
+     document: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true, // --- CORRECTED: Document is now optional ---
+        unique: true,
+        field: 'document'
     },
     is_active: {
         type: DataTypes.BOOLEAN,
