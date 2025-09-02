@@ -16,8 +16,8 @@ const BedStrength = sequelize.define('BedStrength', {
     },
     document: {
         type: DataTypes.STRING,
-        allowNull: false,
-        unique: true, // Prevent duplicate document paths
+        allowNull: true, // <-- CHANGE THIS from false to true
+        unique: true,
         field: 'document'
     },
     is_active: {
