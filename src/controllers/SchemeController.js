@@ -119,17 +119,29 @@ export const update = async (req, res) => {
         const scheme = await Scheme.findByPk(id);
         if (!scheme) return res.status(404).json({ message: "Scheme not found." });
 
-        let { en_title, od_title } = req.body;
+        // Get all potential inputs from the form
+        let { en_title, od_title, removeExistingDocument } = req.body;
+        const shouldRemoveDocument = removeExistingDocument === 'true';
+
         en_title = normalizeTitle(en_title);
         od_title = normalizeTitle(od_title);
-        // GET FILENAME or keep the old one
-        const documentFilename = req.file ? path.basename(req.file.path) : scheme.document;
-        
+
+        // Determine the final filename
+        let finalDocumentFilename = scheme.document;
+        if (req.file) {
+            finalDocumentFilename = path.basename(req.file.path);
+        } else if (shouldRemoveDocument) {
+            finalDocumentFilename = null;
+        }
+
+        // Check for duplicates if anything unique is changing
         const potentialDuplicates = [];
         if (en_title && en_title !== scheme.en_title) potentialDuplicates.push({ en_title });
         if (od_title && od_title !== scheme.od_title) potentialDuplicates.push({ od_title });
-        if (req.file) potentialDuplicates.push({ document: documentFilename });
-
+        if (finalDocumentFilename && finalDocumentFilename !== scheme.document) {
+            potentialDuplicates.push({ document: finalDocumentFilename });
+        }
+        
         if (potentialDuplicates.length > 0) {
             const existingScheme = await Scheme.findOne({
                 where: {
@@ -143,13 +155,19 @@ export const update = async (req, res) => {
             }
         }
         
-        // If a new file was uploaded, delete the old one
-        if (req.file && scheme.document) {
+        // Handle physical file deletion
+        if ((req.file || shouldRemoveDocument) && scheme.document) {
             deleteFile(scheme.document);
         }
         
-        // UPDATE DB WITH FILENAME
-        await scheme.update({ ...req.body, en_title, od_title, document: documentFilename });
+        // Update the database record
+        await scheme.update({ 
+            ...req.body, 
+            en_title, 
+            od_title, 
+            document: finalDocumentFilename 
+        });
+
         res.status(200).json({ message: "Scheme updated successfully!", data: scheme });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
