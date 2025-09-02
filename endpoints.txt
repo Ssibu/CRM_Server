@@ -1,2 +1,0 @@
-http://localhost:7777/admin/signup
-http://localhost:7777/admin/login
