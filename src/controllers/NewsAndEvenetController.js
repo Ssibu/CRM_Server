@@ -65,40 +65,54 @@ export const update = async (req, res) => {
     const event = await NewsAndEvent.findByPk(id);
     if (!event) return res.status(404).json({ message: "Event not found." });
 
-    let { titleEnglish, titleOdia, eventDate, status } = req.body;
+    // Get all potential inputs from the form
+    let { titleEnglish, titleOdia, eventDate, status, removeExistingDocument } = req.body;
+    const shouldRemoveDocument = removeExistingDocument === 'true';
+    
     titleEnglish = normalizeTitle(titleEnglish);
     titleOdia = normalizeTitle(titleOdia);
-    const documentFilename = req.file ? path.basename(req.file.path) : event.document;
 
-    // --- CORRECTED: Check for duplicates on OTHER records ---
+    // Determine the final filename
+    let finalDocumentFilename = event.document; // Default to current
+    if (req.file) {
+        finalDocumentFilename = path.basename(req.file.path); // Use new file
+    } else if (shouldRemoveDocument) {
+        finalDocumentFilename = null; // Set to null for removal
+    }
+
+    // Check for duplicates if anything unique is changing
     const potentialDuplicates = [];
     if (titleEnglish && titleEnglish !== event.titleEnglish) potentialDuplicates.push({ titleEnglish });
     if (titleOdia && titleOdia !== event.titleOdia) potentialDuplicates.push({ titleOdia });
-    if (req.file && documentFilename !== event.document) potentialDuplicates.push({ document: documentFilename });
-
+    // Only check for document uniqueness if the filename is changing to a non-null value
+    if (finalDocumentFilename && finalDocumentFilename !== event.document) {
+        potentialDuplicates.push({ document: finalDocumentFilename });
+    }
+    
     if (potentialDuplicates.length > 0) {
         const existingEvent = await NewsAndEvent.findOne({
             where: {
                 [Op.or]: potentialDuplicates,
-                id: { [Op.ne]: id } // Exclude the current record
+                id: { [Op.ne]: id }
             }
         });
         if (existingEvent) {
             return res.status(409).json({ message: "Another event with this Title or Document already exists." });
         }
     }
-
-    // Delete the old file only if a new one was successfully uploaded
-    if (req.file) {
-      deleteFile(event.document, 'events');
+    
+    // Handle physical file deletion if a new file was uploaded OR if removal was requested
+    if ((req.file || shouldRemoveDocument) && event.document) {
+        deleteFile(event.document, 'events');
     }
     
+    // Update the database record with all changes
     await event.update({
         titleEnglish: titleEnglish || event.titleEnglish,
         titleOdia: titleOdia || event.titleOdia,
         eventDate: eventDate || event.eventDate,
         status: status !== undefined ? status : event.status,
-        document: documentFilename,
+        document: finalDocumentFilename,
     });
 
     res.status(200).json({ message: "Event updated successfully!", data: event });
