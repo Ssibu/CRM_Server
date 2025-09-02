@@ -20,7 +20,7 @@ const NewsAndEvent = sequelize.define(
     },
     document: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true // <-- ADDED: Ensures every file path is unique in the DB
     },
     status: {
