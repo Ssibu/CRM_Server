@@ -118,16 +118,30 @@ export const update = async (req, res) => {
         const form = await Form.findByPk(id);
         if (!form) return res.status(404).json({ message: "Form not found." });
 
-        let { en_title, od_title } = req.body;
+        // --- 1. GET ALL POTENTIAL INPUTS FROM THE FORM ---
+        let { en_title, od_title, removeExistingDocument } = req.body;
+        const shouldRemoveDocument = removeExistingDocument === 'true';
+
         en_title = normalizeTitle(en_title);
         od_title = normalizeTitle(od_title);
-        const documentFilename = req.file ? path.basename(req.file.path) : form.document;
-        
+
+        // --- 2. DETERMINE THE FINAL FILENAME ---
+        let finalDocumentFilename = form.document; // Default to the current filename
+        if (req.file) {
+            finalDocumentFilename = path.basename(req.file.path);
+        } else if (shouldRemoveDocument) {
+            finalDocumentFilename = null; // Set to null for deletion
+        }
+
+        // --- 3. CHECK FOR DUPLICATES (IF ANYTHING UNIQUE IS CHANGING) ---
         const potentialDuplicates = [];
         if (en_title && en_title !== form.en_title) potentialDuplicates.push({ en_title });
         if (od_title && od_title !== form.od_title) potentialDuplicates.push({ od_title });
-        if (req.file) potentialDuplicates.push({ document: documentFilename });
-
+        // Only check for document uniqueness if the filename is changing to a non-null value
+        if (finalDocumentFilename && finalDocumentFilename !== form.document) {
+            potentialDuplicates.push({ document: finalDocumentFilename });
+        }
+        
         if (potentialDuplicates.length > 0) {
             const existingForm = await Form.findOne({
                 where: {
@@ -141,12 +155,20 @@ export const update = async (req, res) => {
             }
         }
         
-        // If a new file was uploaded, delete the old one
-        if (req.file && form.document) {
+        // --- 4. HANDLE PHYSICAL FILE DELETION ---
+        // Delete the old file if a new one was uploaded OR if removal was requested
+        if ((req.file || shouldRemoveDocument) && form.document) {
             deleteFile(form.document);
         }
         
-        await form.update({ ...req.body, en_title, od_title, document: documentFilename });
+        // --- 5. UPDATE THE DATABASE RECORD ---
+        await form.update({ 
+            ...req.body, 
+            en_title, 
+            od_title, 
+            document: finalDocumentFilename 
+        });
+
         res.status(200).json({ message: "Form updated successfully!", data: form });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
