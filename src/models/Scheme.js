@@ -6,14 +6,18 @@ const Scheme = sequelize.define('Scheme', {
     en_title: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true,
     },
     od_title: {
         type: DataTypes.STRING, // Using STRING is fine for titles
         allowNull: false,
+        unique: true,
     },
     document: {
-        type: DataTypes.STRING, // Storing the file path as a string
-        allowNull: false,
+        type: DataTypes.STRING,
+        allowNull: true, // --- CORRECTED: Document is now optional ---
+        unique: true,
+        
     },
     is_active: {
         type: DataTypes.BOOLEAN,
