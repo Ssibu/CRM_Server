@@ -16,7 +16,7 @@ const Menu = sequelize.define('Menu', {
 }, {
   tableName: 'menus',
   timestamps: true
-});
+}); 
 
 Menu.associate = (models) => {
   Menu.hasMany(models.SubMenu, { foreignKey: 'menuId', as: 'SubMenus' });
