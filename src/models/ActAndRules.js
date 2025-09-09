@@ -15,6 +15,10 @@ const ActAndRule = sequelize.define(
       allowNull: false,
       unique: true 
     },
+     date: {
+      type: DataTypes.DATEONLY, // Stores date in 'YYYY-MM-DD' format
+      allowNull: false,         // Make it a required field
+    },
     en_description: {
       type: DataTypes.TEXT,
       allowNull: false,
@@ -23,6 +27,7 @@ const ActAndRule = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    
     status: {
       type: DataTypes.STRING,
       defaultValue: 'Active',
