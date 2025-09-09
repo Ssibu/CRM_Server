@@ -55,6 +55,7 @@ import models from '../../models/index.js';
 const { Menu, SubMenu, SubSubMenu, HomeSetting } = models;
 
 export const getNavigationTree = async (req, res) => {
+  
   try {
     const [navigationTree, settings] = await Promise.all([
       Menu.findAll({
