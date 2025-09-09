@@ -40,7 +40,7 @@ import dashboardRoutes from "./routes/Admin/DashboardRoutes.js"
 import homeAdminRoutes from "./routes/Admin/HomeAdminRoutes.js"
 import galleryRoutes from "./routes/Admin/GalleryRoutes.js"
 import generatedLinkRoutes from "./routes/Admin/GeneratedLinkRoutes.js"
-
+import logRecordRoutes from "./routes/Admin/LogRecordRoutes.js"
 
 
 //user routes
@@ -128,6 +128,7 @@ app.use('/api/subsubmenus', subSubMenuRoutes);
 app.use("/api/home-settings", homeConfigurationRoutes)
 app.use("/api/generated-links", generatedLinkRoutes);
 app.use('/image-setup', importantLinkRoutes);
+app.use("/logs", logRecordRoutes)
 
 
 
