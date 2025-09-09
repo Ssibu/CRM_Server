@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express'
+import useragent from 'express-useragent';
 
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -73,6 +74,8 @@ import homeAdvertiseRoutres from "./routes/User/HomeAdvertisementRoutes.js"
 const app = express()
 const PORT = process.env.PORT;
 app.use(express.urlencoded({ extended: true }));
+app.set('trust proxy', true);
+app.use(useragent.express());
 app.use(cookieParser())
 
 
