@@ -36,7 +36,7 @@ import VideoGallery from './VideoGallery.js';
 import Holiday from "./Holiday.js"
 import ImportantLink from './ImportantLink.js';
 import BedStrength from './BedStrength.js';
-
+import Log from './LogRecord.js';
 
 const models = {
   sequelize,
@@ -73,7 +73,8 @@ const models = {
   VideoGallery,
   Holiday,
   ImportantLink,
-  BedStrength
+  BedStrength,
+  Log
 };
 
 Object.values(models).forEach((model) => {
