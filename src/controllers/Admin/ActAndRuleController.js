@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import ActAndRule from '../../models/ActAndRules.js';
 export const create = async (req, res) => {
   try {
-    const { en_title, od_title, en_description, od_description } = req.body;
+    const { en_title, od_title, en_description, od_description,date } = req.body;
 
     // --- 1. VALIDATION: Check for duplicates ---
     const existingRecord = await ActAndRule.findOne({
@@ -25,7 +25,8 @@ export const create = async (req, res) => {
         en_title,
         od_title,
         en_description,
-        od_description
+        od_description,
+        date
     });
 
     res.status(201).send(newActAndRule);
@@ -45,7 +46,7 @@ export const findAll = async (req, res) => {
     const sortOrder = req.query.order || 'ASC';
 
     // Security: Whitelist sortable columns to prevent unwanted sorting
-    const allowedSortColumns = ['id', 'en_title', 'od_title', 'status', 'createdAt', 'displayOrder'];
+    const allowedSortColumns = ['id', 'en_title', 'od_title', 'status', 'createdAt', 'displayOrder','date'];
     if (!allowedSortColumns.includes(sortBy)) {
       // This reassignment is now valid because sortBy was declared with 'let'
       sortBy = 'displayOrder';
