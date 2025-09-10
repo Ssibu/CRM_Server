@@ -2,8 +2,10 @@ import Scheme from '../../models/Scheme.js';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
+import { log } from '../../services/LogService.js';
 
 // Helper to safely delete a file
+const PAGE_NAME = 'SCHEME';
 const normalizeTitle = (str) => {
   return str ? str.trim().replace(/\s+/g, " ") : str;
 };
@@ -42,6 +44,12 @@ export const create = async (req, res) => {
 
         // SAVE ONLY THE FILENAME
         const newScheme = await Scheme.create({ en_title, od_title, document: documentFilename });
+        await log({
+          req,
+          action: 'CREATE',
+          page_name: PAGE_NAME,
+          target: newScheme.id, // Log the ID of the new scheme
+        });
         res.status(201).json({ message: "Scheme created successfully!", data: newScheme });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -85,6 +93,11 @@ export const findAll = async (req, res) => {
       limit: limit,
       offset: offset,
     });
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
 
     // Return the data in the format the frontend hook expects
     return res.json({
@@ -103,6 +116,12 @@ export const findOne = async (req, res) => {
     try {
         const scheme = await Scheme.findOne({ where: { id: req.params.id, is_delete: false } });
         if (scheme) {
+            await log({
+              req,
+              action: 'READ',
+              page_name: PAGE_NAME,
+              target: req.params.id, // Log which scheme was viewed
+            });
             res.status(200).send(scheme);
         } else {
             res.status(404).send({ message: "Scheme not found." });
@@ -167,6 +186,12 @@ export const update = async (req, res) => {
             od_title, 
             document: finalDocumentFilename 
         });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: id, // Log which scheme was updated
+        });
 
         res.status(200).json({ message: "Scheme updated successfully!", data: scheme });
     } catch (error) {
@@ -181,6 +206,12 @@ export const update = async (req, res) => {
 export const destroy = async (req, res) => {
     try {
         await Scheme.update({ is_delete: true }, { where: { id: req.params.id } });
+        await log({
+          req,
+          action: 'DELETE', // Log as a DELETE action even though it's a soft delete
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which scheme was deleted
+        });
         res.status(200).send({ message: "Scheme was deleted successfully!" });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -194,6 +225,12 @@ export const toggleStatus = async (req, res) => {
         if (!scheme) return res.status(404).send({ message: "Scheme not found." });
         
         await scheme.update({ is_active: !scheme.is_active });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which scheme had its status toggled
+        });
         res.status(200).send({ message: `Status updated successfully.` });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -209,6 +246,12 @@ export const updateOrder = async (req, res) => {
             Scheme.update({ displayOrder: index }, { where: { id }, transaction })
         ));
         await transaction.commit();
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered schemes',
+        });
         res.status(200).send({ message: "Order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: error.message });
