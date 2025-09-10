@@ -18,8 +18,6 @@ export const generateCaptcha = (req, res) => {
   const answer = num1 + num2;
 
   req.session.captcha = answer;
-
-
   req.session.save((err) => {
     if (err) {
       console.error('Session save error:', err);
@@ -34,9 +32,7 @@ export const generateCaptcha = (req, res) => {
 export const register = async (req, res) => {
   try {
     const { name, email, mobile } = req.body;
-    const profilePicFile = req.file; // multer places uploaded file here
-
-    // Validate required fields and uploaded file
+    const profilePicFile = req.file;
     if (!name || !email || !mobile || !profilePicFile) {
       return res.status(400).json({ error: 'All fields including image are required.' });
     }
