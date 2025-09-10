@@ -1,5 +1,7 @@
 import { Op } from 'sequelize';
 import ActAndRule from '../../models/ActAndRules.js';
+import { log } from '../../services/LogService.js';
+const PAGE_NAME = 'ACT_AND_RULE';
 export const create = async (req, res) => {
   try {
     const { en_title, od_title, en_description, od_description } = req.body;
@@ -26,6 +28,12 @@ export const create = async (req, res) => {
         od_title,
         en_description,
         od_description
+    });
+    await log({
+      req,
+      action: 'CREATE',
+      page_name: PAGE_NAME,
+      target: newActAndRule.id, // Log the ID of the new record
     });
 
     res.status(201).send(newActAndRule);
@@ -68,6 +76,11 @@ export const findAll = async (req, res) => {
       limit: limit,
       offset: offset,
     });
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
 
     return res.json({
       total: count,
@@ -84,6 +97,12 @@ export const findOne = async (req, res) => {
   try {
     const actAndRule = await ActAndRule.findByPk(id);
     if (actAndRule) {
+       await log({
+        req,
+        action: 'READ',
+        page_name: PAGE_NAME,
+        target: id, // Log which specific record was read
+      });
       res.status(200).send(actAndRule);
     } else {
       res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
@@ -126,6 +145,12 @@ export const update = async (req, res) => {
 
     // If validation passes, proceed to update
     await actAndRule.update(req.body);
+     await log({
+      req,
+      action: 'UPDATE',
+      page_name: PAGE_NAME,
+      target: id, // Log which record was updated
+    });
     
     res.status(200).send(actAndRule);
 
@@ -141,6 +166,12 @@ export const destroy = async (req, res) => {
   try {
     const deleted = await ActAndRule.destroy({ where: { id: id } });
     if (deleted) {
+       await log({
+        req,
+        action: 'DELETE',
+        page_name: PAGE_NAME,
+        target: id, // Log which record was deleted
+      });
       res.status(200).send({ message: "Act & Rule was deleted successfully!" });
     } else {
       res.status(404).send({ message: `Cannot find Act & Rule with id=${id}.` });
@@ -163,6 +194,12 @@ export const updateOrder = async (req, res) => {
             )
         ));
         await transaction.commit();
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered items', // A general target for this action is fine
+        });
         res.status(200).send({ message: "Order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: "Failed to update order.", error: error.message });
@@ -177,6 +214,13 @@ export const toggleStatus = async (req, res) => {
     }
     const newStatus = actAndRule.status === 'Active' ? 'Inactive' : 'Active';
     await actAndRule.update({ status: newStatus });
+
+    await log({
+      req,
+      action: 'UPDATE',
+      page_name: PAGE_NAME,
+      target: id, // Log which record had its status toggled
+    });
     
     res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
 
