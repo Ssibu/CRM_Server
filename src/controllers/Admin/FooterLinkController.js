@@ -1,6 +1,8 @@
 
 import Footerlink from '../../models/FooterLink.js';
 import { Op } from 'sequelize';
+import { log } from '../../services/LogService.js';
+const PAGE_NAME = 'FOOTER_LINK';
 export const create = async (req, res) => {
   try {
     const { en_link_text, od_link_text, url, linkType } = req.body;
@@ -21,9 +23,17 @@ export const create = async (req, res) => {
 
     if (existingLink) {
       return res.status(409).send({ message: "A footer link with this text or URL already exists." });
+
+
     }
 
     const newLink = await Footerlink.create({ en_link_text, od_link_text, url, linkType });
+    await log({
+      req,
+      action: 'CREATE',
+      page_name: PAGE_NAME,
+      target: newLink.id, // Log the ID of the new link
+    });
     res.status(201).send(newLink);
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -67,6 +77,12 @@ export const findAll = async (req, res) => {
       offset: offset,
     });
 
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
+
     // Return the data in the format the frontend hook expects
     return res.json({
       total: count,
@@ -83,6 +99,12 @@ export const findOne = async (req, res) => {
   try {
     const link = await Footerlink.findByPk(id);
     if (link) {
+      await log({
+        req,
+        action: 'READ',
+        page_name: PAGE_NAME,
+        target: id, // Log which link was viewed
+      });
       res.status(200).send(link);
     } else {
       res.status(404).send({ message: `Cannot find Link with id=${id}.` });
@@ -119,6 +141,12 @@ export const update = async (req, res) => {
     const [updated] = await Footerlink.update(req.body, { where: { id: id } });
     if (updated) {
       const updatedLink = await Footerlink.findByPk(id);
+      await log({
+        req,
+        action: 'UPDATE',
+        page_name: PAGE_NAME,
+        target: id, // Log which link was updated
+      });
       res.status(200).send(updatedLink);
     } else {
       res.status(404).send({ message: `Cannot find link with id=${id}.` });
@@ -135,6 +163,12 @@ export const destroy = async (req, res) => {
   try {
     const deleted = await Footerlink.destroy({ where: { id: id } });
     if (deleted) {
+      await log({
+        req,
+        action: 'DELETE',
+        page_name: PAGE_NAME,
+        target: id, // Log which link was deleted
+      });
       res.status(200).send({ message: "Link was deleted successfully!" });
     } else {
       res.status(404).send({ message: `Cannot find link with id=${id}.` });
@@ -157,6 +191,12 @@ export const updateOrder = async (req, res) => {
             )
         ));
         await transaction.commit();
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered links',
+        });
         res.status(200).send({ message: "Link order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: "Failed to update link order.", error: error.message });
@@ -171,6 +211,12 @@ export const toggleStatus = async (req, res) => {
     }
     const newStatus = link.status === 'Active' ? 'Inactive' : 'Active';
     await link.update({ status: newStatus });
+     await log({
+      req,
+      action: 'UPDATE',
+      page_name: PAGE_NAME,
+      target: id, // Log which link had its status toggled
+    });
     res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
 
   } catch (error) {
