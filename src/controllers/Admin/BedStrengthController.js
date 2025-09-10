@@ -2,6 +2,8 @@ import { Op } from 'sequelize';
 import BedStrength from '../../models/BedStrength.js';
 import fs from 'fs';
 import path from 'path';
+import { log } from '../../services/LogService.js'
+const PAGE_NAME = 'BED_STRENGTH';
 
 // Helper to safely delete a file
 const normalizeTitle = (str) => {
@@ -40,6 +42,12 @@ export const create = async (req, res) => {
         }
 
         const newRecord = await BedStrength.create({ en_title, od_title, document: documentFilename });
+        await log({
+          req,
+          action: 'CREATE',
+          page_name: PAGE_NAME,
+          target: newRecord.id, // Log the ID of the new record
+        });
         res.status(201).json({ message: "Record created successfully!", data: newRecord });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -79,6 +87,11 @@ export const findAll = async (req, res) => {
       limit: limit,
       offset: offset,
     });
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
 
     return res.json({
       total: count,
@@ -94,7 +107,17 @@ export const findAll = async (req, res) => {
 export const findOne = async (req, res) => {
     try {
         const record = await BedStrength.findOne({ where: { id: req.params.id, is_delete: false } });
-        if (record) res.status(200).send(record);
+        if (record) {
+            // --- ADD LOG ---
+            await log({
+              req,
+              action: 'READ',
+              page_name: PAGE_NAME,
+              target: req.params.id, // Log which record was viewed
+            });
+            // ---------------
+            res.status(200).send(record);
+        } 
         else res.status(404).send({ message: "Record not found." });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -160,6 +183,12 @@ export const update = async (req, res) => {
             od_title, 
             document: finalDocumentFilename 
         });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: id, // Log which record was updated
+        });
 
         res.status(200).json({ message: "Record updated successfully!", data: record });
     } catch (error) {
@@ -173,6 +202,12 @@ export const update = async (req, res) => {
 export const destroy = async (req, res) => {
     try {
         await BedStrength.update({ is_delete: true }, { where: { id: req.params.id } });
+         await log({
+          req,
+          action: 'DELETE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which record was soft-deleted
+        });
         res.status(200).send({ message: "Record was deleted successfully!" });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -186,6 +221,12 @@ export const toggleStatus = async (req, res) => {
         if (!record) return res.status(404).send({ message: "Record not found." });
         
         await record.update({ is_active: !record.is_active });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which record had its status toggled
+        });
         res.status(200).send({ message: `Status updated successfully.` });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -201,6 +242,12 @@ export const updateOrder = async (req, res) => {
             BedStrength.update({ display_order: index }, { where: { id }, transaction })
         ));
         await transaction.commit();
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered records',
+        });
         res.status(200).send({ message: "Order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: error.message });
