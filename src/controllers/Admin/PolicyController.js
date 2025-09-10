@@ -2,6 +2,9 @@ import Policy from '../../models/Policy.js';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
+import { log } from '../../services/LogService.js';
+
+const PAGE_NAME = 'POLICY';
 
 const normalizeTitle = (str) => {
   return str ? str.trim().replace(/\s+/g, " ") : str;
@@ -46,6 +49,12 @@ export const create = async (req, res) => {
         }
 
         const newPolicy = await Policy.create({ en_title, od_title, document: documentFilename });
+        await log({
+          req,
+          action: 'CREATE',
+          page_name: PAGE_NAME,
+          target: newPolicy.id, // Log the ID of the new policy
+        });
         res.status(201).json({ message: "Policy created successfully!", data: newPolicy });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -89,6 +98,11 @@ export const findAll = async (req, res) => {
       limit: limit,
       offset: offset,
     });
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
 
     // Return the data in the format the frontend hook expects
     return res.json({
@@ -106,6 +120,12 @@ export const findAll = async (req, res) => {
 export const findOne = async (req, res) => {
     try {
         const policy = await Policy.findByPk(req.params.id);
+        await log({
+          req,
+          action: 'READ',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which policy was viewed
+        });
         res.status(200).send(policy);
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -167,6 +187,12 @@ export const update = async (req, res) => {
             od_title, 
             document: finalDocumentFilename 
         });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: id, // Log which policy was updated
+        });
 
         res.status(200).json({ message: "Policy updated successfully!", data: policy });
     } catch (error) {
@@ -180,6 +206,12 @@ export const update = async (req, res) => {
 export const destroy = async (req, res) => {
     try {
         await Policy.update({ is_delete: true }, { where: { id: req.params.id } });
+        await log({
+          req,
+          action: 'DELETE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which policy was soft-deleted
+        });
         res.status(200).send({ message: "Policy was deleted successfully!" });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -194,6 +226,12 @@ export const toggleStatus = async (req, res) => {
         
         const newStatus = !policy.is_active;
         await policy.update({ is_active: newStatus });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which policy had its status toggled
+        });
         res.status(200).send({ message: `Status updated successfully.` });
     } catch (error) {
         res.status(500).send({ message: error.message });
@@ -209,6 +247,12 @@ export const updateOrder = async (req, res) => {
             Policy.update({ displayOrder: index }, { where: { id }, transaction })
         ));
         await transaction.commit();
+         await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered policies',
+        });
         res.status(200).send({ message: "Order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: error.message });
