@@ -2,7 +2,9 @@ import NewsAndEvent from '../../models/NewsAndEvent.js';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
+import { log } from '../../services/LogService.js';
 
+const PAGE_NAME = 'NEWS_AND_EVENT';
 const normalizeTitle = (str) => {
   return str ? str.trim().replace(/\s+/g, " ") : str;
 };
@@ -45,6 +47,13 @@ export const create = async (req, res) => {
       od_title,
       eventDate,
       document: documentFilename,
+    });
+
+     await log({
+      req,
+      action: 'CREATE',
+      page_name: PAGE_NAME,
+      target: newEvent.id, // Log the ID of the new event
     });
 
     res.status(201).json({ message: "News & Event created successfully!", data: newEvent });
@@ -114,6 +123,12 @@ export const update = async (req, res) => {
         status: status !== undefined ? status : event.status,
         document: finalDocumentFilename,
     });
+    await log({
+      req,
+      action: 'UPDATE',
+      page_name: PAGE_NAME,
+      target: id, // Log which event was updated
+    });
 
     res.status(200).json({ message: "Event updated successfully!", data: event });
   } catch (error) {
@@ -159,6 +174,11 @@ export const findAll = async (req, res) => {
       offset: offset,
     });
 
+    await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
     // --- THIS IS THE CRITICAL FIX ---
     // Return the data in the object format that the frontend hook expects
     return res.json({
@@ -192,6 +212,12 @@ export const destroy = async (req, res) => {
     }
 
     await NewsAndEvent.destroy({ where: { id: id } });
+    await log({
+      req,
+      action: 'DELETE',
+      page_name: PAGE_NAME,
+      target: id, // Log which event was deleted
+    });
     res.status(200).send({ message: "Event was deleted successfully!" });
   } catch (error) {
     res.status(500).send({ message: `Could not delete event.` });
@@ -204,6 +230,12 @@ export const findOne = async (req, res) => {
   try {
     const event = await NewsAndEvent.findByPk(id);
     if (event) {
+      await log({
+        req,
+        action: 'READ',
+        page_name: PAGE_NAME,
+        target: id, // Log which event was viewed
+      });
       res.status(200).send(event);
     } else {
       res.status(404).send({ message: `Cannot find Event with id=${id}.` });
@@ -225,6 +257,12 @@ export const toggleStatus = async (req, res) => {
     }
     const newStatus = event.status === 'Active' ? 'Inactive' : 'Active';
     await event.update({ status: newStatus });
+     await log({
+      req,
+      action: 'UPDATE',
+      page_name: PAGE_NAME,
+      target: id, // Log which event had its status toggled
+    });
     res.status(200).send({ message: `Status updated to ${newStatus} successfully.` });
 
   } catch (error) {
