@@ -2,6 +2,9 @@ import Form from '../../models/Form.js';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
+import { log } from '../../services/LogService.js';
+
+const PAGE_NAME = 'FORM';
 
 // Helper to safely delete a file from the public directory
 const normalizeTitle = (str) => {
@@ -42,6 +45,12 @@ export const create = async (req, res) => {
         }
 
         const newForm = await Form.create({ en_title, od_title, document: documentFilename });
+        await log({
+          req,
+          action: 'CREATE',
+          page_name: PAGE_NAME,
+          target: newForm.id, // Log the ID of the new form
+        });
         res.status(201).json({ message: "Form created successfully!", data: newForm });
     } catch (error) {
         if (error.name === 'SequelizeUniqueConstraintError') {
@@ -84,6 +93,11 @@ export const findAll = async (req, res) => {
       limit: limit,
       offset: offset,
     });
+     await log({
+      req,
+      action: 'READ',
+      page_name: PAGE_NAME,
+    });
 
     // Return the data in the specific object format that the frontend hook expects
     return res.json({
@@ -102,6 +116,12 @@ export const findOne = async (req, res) => {
     try {
         const form = await Form.findOne({ where: { id: req.params.id, is_delete: false } });
         if (form) {
+            await log({
+              req,
+              action: 'READ',
+              page_name: PAGE_NAME,
+              target: req.params.id, // Log which form was viewed
+            });
             res.status(200).send(form);
         } else {
             res.status(404).send({ message: "Form not found." });
@@ -168,6 +188,12 @@ export const update = async (req, res) => {
             od_title, 
             document: finalDocumentFilename 
         });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: id, // Log which form was updated
+        });
 
         res.status(200).json({ message: "Form updated successfully!", data: form });
     } catch (error) {
@@ -182,6 +208,12 @@ export const update = async (req, res) => {
 export const destroy = async (req, res) => {
     try {
         await Form.update({ is_delete: true }, { where: { id: req.params.id } });
+        await log({
+          req,
+          action: 'DELETE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which form was soft-deleted
+        });
         res.status(200).send({ message: "Form was deleted successfully!" });
     } catch (error) {
         res.status(500).send({ message: error.message || "Error deleting Form." });
@@ -195,6 +227,12 @@ export const toggleStatus = async (req, res) => {
         if (!form) return res.status(404).send({ message: "Form not found." });
         
         await form.update({ is_active: !form.is_active });
+        await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: req.params.id, // Log which form had its status toggled
+        });
         res.status(200).send({ message: `Status updated successfully.` });
     } catch (error) {
         res.status(500).send({ message: error.message || "Error toggling status." });
@@ -210,6 +248,12 @@ export const updateOrder = async (req, res) => {
             Form.update({ displayOrder: index }, { where: { id }, transaction })
         ));
         await transaction.commit();
+         await log({
+          req,
+          action: 'UPDATE',
+          page_name: PAGE_NAME,
+          target: 'Reordered forms',
+        });
         res.status(200).send({ message: "Order updated successfully." });
     } catch (error) {
         res.status(500).send({ message: error.message || "Error updating order." });
