@@ -29,4 +29,13 @@ const PasswordHistory = sequelize.define(
   }
 );
 
+PasswordHistory.associate = (models) => {
+  // This line defines the relationship, stating that a PasswordHistory entry
+  // belongs to one User.
+  PasswordHistory.belongsTo(models.User, {
+    foreignKey: 'userId',
+    as: 'user',
+  });
+};
+
 export default PasswordHistory;
