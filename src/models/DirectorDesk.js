@@ -99,11 +99,11 @@ const DirectorDesk = sequelize.define('DirectorDesk', {
     allowNull: true,
   },
   en_message: {
-    type: DataTypes.TEXT(2000), // Added character limit
+    type: DataTypes.STRING(2000), // Added character limit
     allowNull: true,
   },
   od_message: {
-    type: DataTypes.TEXT(2000), // Added character limit
+    type: DataTypes.STRING(2000),  // Added character limit
     allowNull: true,
   },
   director_img: { 
