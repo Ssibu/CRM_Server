@@ -38,7 +38,7 @@ import ImportantLink from './ImportantLink.js';
 import BedStrength from './BedStrength.js';
 import Log from './LogRecord.js';
 import Visitor from './Visitor.js';
-
+import PasswordHistory from "./PasswordHistory.js";
 
 const models = {
   sequelize,
@@ -57,6 +57,7 @@ const models = {
   Policy,
   Scheme,
   HomepageBanner,
+  PasswordHistory,
 
   // Chatbot
   ChatbotCategory,
@@ -85,5 +86,7 @@ Object.values(models).forEach((model) => {
     model.associate(models);
   }
 });
+User.hasMany(PasswordHistory, { foreignKey: 'userId', as: 'passwordHistory' });
+PasswordHistory.belongsTo(User, { foreignKey: 'userId' });
 
 export default models;
