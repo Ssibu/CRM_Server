@@ -7,7 +7,7 @@ import path from "path";
 import nodemailer from "nodemailer";
 import { log } from "../../services/LogService.js";
 import sequelize from "../../../config/db.js";
-const { User, Page } = models;
+const { User, Page ,PasswordHistory } = models;
 
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
